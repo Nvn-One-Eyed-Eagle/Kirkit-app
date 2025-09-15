@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %} Home page {% endblock  %}
+
+{% block content  %}
+
+<!-- checking preexisting users -->
+
+<h2>Prexisting database </h2>
+{% if profile %}
+
+{% for i in profile %}
+
+{% if i.player_img %}
+<img src="{{ i.player_img.url }}" alt="{{i.player_name}}">
+<h3>{{ i.player_name }}</h3>
+{% else %}
+<p>no picture availabele </p>
+{% endif %}
+
+{% endfor %}
+{% else %}
+<p>no pre-existing database found </p>
+{% endif %}
+
+<!--input to add new user and save to the model -->
+<form action="" method = "POST">
+    {% csrf_token %}
+    
+</form>
+
+{% endblock  %}
