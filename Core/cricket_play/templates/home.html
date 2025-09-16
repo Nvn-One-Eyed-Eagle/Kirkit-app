@@ -5,28 +5,44 @@
 {% block content  %}
 
 <!-- checking preexisting users -->
-
-<h2>Prexisting database </h2>
-{% if profile %}
-
-{% for i in profile %}
-
-{% if i.player_img %}
-<img src="{{ i.player_img.url }}" alt="{{i.player_name}}">
-<h3>{{ i.player_name }}</h3>
-{% else %}
-<p>no picture availabele </p>
-{% endif %}
-
-{% endfor %}
-{% else %}
-<p>no pre-existing database found </p>
-{% endif %}
-
-<!--input to add new user and save to the model -->
-<form action="" method = "POST">
-    {% csrf_token %}
+<h2>Pre-existing database</h2>
+<div class="player-content">
+    {% if profile %}
     
+    {% for i in profile %}
+    
+    <div class="player-box">
+        {% if i.player_img %}
+        <img src="{{ i.player_img.url }}" alt="{{i.player_name}}">
+        <h3>{{ i.player_name }}</h3>
+        {% else %}
+        <p>no picture availabele </p>
+        {% endif %}
+    </div>
+    
+    {% endfor %}
+    {% else %}
+    <p>no pre-existing database found </p>
+    {% endif %}
+</div>
+
+<h2>Add a new player</h2>
+<!--input to add new user and save to the model -->
+<form method = "POST" enctype = "multipart/form-data">
+    {% csrf_token %}
+    <label for="name">Player Name : </label>
+    <input type="text" name = "player_name" id = "name">
+    <br><br>
+    <label for="img">Player profile : </label>
+    <input type="file" name = "player_img" id = "img" accept="image/*"> <br><br>
+    <button type = 'submit'>Save</button>
 </form>
+{% if errors %}
+<ul style = "color : red;">
+    {% for i in errors %}
+    <li>{{i}}</li>
+    {% endfor %}
+</ul>
+{% endif %}
 
 {% endblock  %}

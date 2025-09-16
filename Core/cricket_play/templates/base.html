@@ -5,6 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> {% block title %}My website{% endblock  %} </title>
 </head>
+<style>
+  .player-content{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns */
+    gap: 10px;
+    max-height: 160px;  /* adjust so only 2 rows are visible */
+    overflow-y: auto;   /* vertical scrolling */
+    padding: 10px;
+    border: 1px solid #ccc;
+
+  }
+  .player-box {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+  }
+
+  .player-box img {
+    width: 60px;         /* small image */
+    height: 60px;
+    object-fit: cover;   /* crop nicely */
+    border-radius: 6px;
+    margin-right: 12px;
+  }
+
+  .player-box h3 {
+    font-size: 16px;
+    margin: 0;
+    color: #333;
+  }
+</style>
 <body>
     
     <header>
