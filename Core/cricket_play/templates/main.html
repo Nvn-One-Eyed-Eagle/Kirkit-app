@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %} Match Scoring {% endblock %}
+
+{% block content %}
+
+<style>
+  /* 🌿 Global Theme */
+  body {
+    font-family: "Poppins", "Segoe UI", sans-serif;
+    background: #f9faf9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h2 {
+    color: #2e7d32;
+    margin-bottom: 15px;
+    border-left: 6px solid #43a047;
+    padding-left: 10px;
+  }
+
+  h3 {
+    color: #2e7d32;
+    margin-bottom: 10px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+
+  /* 🟢 Batting Order List */
+  ol {
+    padding-left: 20px;
+  }
+  ol li {
+    margin: 6px 0;
+    font-weight: 500;
+  }
+
+  /* 🟢 Player Selection */
+  #player-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+  }
+  .player-option {
+    cursor: pointer;
+    text-align: center;
+    padding: 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    width: 110px;
+  }
+  .player-option img {
+    border-radius: 50%;
+    border: 3px solid #81c784;
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    margin-bottom: 8px;
+  }
+  .player-option:hover {
+    background: #e8f5e9;
+    border-color: #43a047;
+    transform: translateY(-4px);
+  }
+
+  /* 🟢 Live Score */
+  #live-score {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  #live-score h3 {
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+  }
+  #batting-pair {
+    display: flex;
+    gap: 25px;
+    margin-top: 15px;
+    justify-content: center;
+  }
+  #batting-pair div {
+    background: #f4f7f5;
+    border-radius: 10px;
+    padding: 12px;
+    width: 130px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  #batting-pair img {
+    border-radius: 50%;
+    margin-bottom: 6px;
+    border: 2px solid #66bb6a;
+  }
+
+  /* 🟢 Controls */
+  #controls {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  #controls button,
+  #highlights button {
+    background: #43a047;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  #controls button:hover,
+  #highlights button:hover {
+    background: #2e7d32;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+
+  /* 🟢 End Over & Conclude */
+  #live-score > div button {
+    margin-right: 8px;
+  }
+
+  /* 🟢 Highlights */
+  #highlights {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  #highlight-list {
+    margin-top: 10px;
+    padding-left: 18px;
+  }
+  #highlight-list li {
+    margin: 4px 0;
+  }
+</style>
+
+
+
+<h2>🏏 Match Scoring</h2>
+
+{% if batting_order %}
+  <!-- Show toss-decided batting order -->
+  <div class="card">
+    <h3>Batting Order</h3>
+    <ol>
+      {% for team in batting_order %}
+        <li style="color: black;"> <strong>{{ team }}</strong></li>
+      {% endfor %}
+    </ol>
+    {% if constant %}
+      <p><strong>Common Player:</strong> {{ constant }} (will play for both teams when needed)</p>
+    {% endif %}
+  </div>
+
+  <!-- Step 1: Select two opening batters -->
+  <div class="card">
+    <h3>Select Opening Batters for {{ batting_order.0 }}</h3>
+    <div id="player-selection">
+      {% for p in profile %}
+        {% if p.player_name in batting_order.0 and p.player_name != constant %}
+        <div class="player-option"
+            onclick="selectBatter('{{ p.player_name }}', '{{ p.player_img.url }}', false)">
+          <img src="{{ p.player_img.url }}" alt="{{ p.player_name }}" width="60" height="60">
+          <p>{{ p.player_name }}</p>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Step 2: Live scoring section -->
+  <div id="live-score" style="display:none;">
+    <h3>Live Score: <span id="score">0</span>/<span id="wickets">0</span></h3>
+    <p>Overs: <span id="overs">0.0</span></p>
+
+    <div id="batting-pair"></div>
+
+    <div id="controls">
+      <button onclick="addRun(0)">0</button>
+      <button onclick="addRun(1)">1</button>
+      <button onclick="addRun(2)">2</button>
+      <button onclick="addRun(3)">3</button>
+      <button onclick="addRun(4)">4</button>
+      <button onclick="addRun(6)">6</button>
+      <button onclick="wicketFall()">Out</button>
+    </div>
+
+    <div style="margin-top:15px;">
+      <button onclick="endOver()">End Over</button>
+      <button onclick="endInnings()">Conclude Innings</button>
+    </div>
+  </div>
+
+  <!-- Highlights Section -->
+  <div id="highlights" style="display:none; margin-top:20px;">
+    <h3>Over Highlights</h3>
+    <ul id="highlight-list"></ul>
+    <button id="next-over-btn" onclick="startNextOver()">Next Over</button>
+  </div>
+
+{% else %}
+  <p>No batting order found. Go back to toss.</p>
+{% endif %}
+
+<script>
+  let players = [];       // current batting pair
+  let strikeIndex = 0;
+  let score = 0, wickets = 0, balls = 0, overs = 0;
+  let playerScores = {};
+  let allTeamPlayers = []; 
+  let currentTeamIndex = 0;
+  let teamScores = [];   // store team totals
+  let battingTeams = {{ batting_order|safe }};  // Django injects ["A & B", "C & D"]
+  let currentInningsHighlights = [];
+  let commonPlayer = "{{ constant|safe }}";
+  let commonPlayerImg = "";
+  
+  // Store all available players with their images
+  let availablePlayers = {
+    {% for p in profile %}
+      "{{ p.player_name }}": "{{ p.player_img.url }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  };
+
+  // Set common player image
+  {% for p in profile %}
+    {% if p.player_name == constant %}
+      commonPlayerImg = "{{ p.player_img.url }}";
+    {% endif %}
+  {% endfor %}
+
+  function selectBatter(name, img, isCommon) {
+    if (!allTeamPlayers.includes(name)) allTeamPlayers.push(name);
+
+    if (players.length < 2) {
+      players.push({name:name, img:img, runs:0, out:false, ballsFaced: 0, isCommon: isCommon});
+      playerScores[name] = {runs: 0, balls: 0, out: false};
+
+      document.getElementById("batting-pair").innerHTML += `
+        <div id="batter-${players.length-1}" style="text-align:center;">
+          <img src="${img}" width="60" style="border-radius:50%;"><br>
+          <strong>${name}${isCommon ? ' (Common)' : ''}</strong><br>
+          Runs: <span id="runs-${name}">0</span><br>
+          Balls: <span id="balls-${name}">0</span>
+        </div>
+      `;
+    }
+
+    if (players.length === 2) {
+      document.getElementById("player-selection").style.display = "none";
+      document.getElementById("live-score").style.display = "block";
+    }
+  }
+
+  function addRun(runs) {
+    // ✅ Prevent scoring if no players yet or innings ended
+    if (players.length === 0 || wickets >= players.length) {
+      alert("No active batters or innings has ended!");
+      return;
+    }
+
+    let striker = players[strikeIndex];
+    
+    // Update runs for the striker
+    striker.runs += runs;
+    playerScores[striker.name].runs += runs;
+    playerScores[striker.name].balls += 1;
+    striker.ballsFaced += 1;
+    score += runs;
+    balls++;
+
+    // Update UI
+    document.getElementById("score").innerText = score;
+    document.getElementById("runs-" + striker.name).innerText = striker.runs;
+    document.getElementById("balls-" + striker.name).innerText = striker.ballsFaced;
+    document.getElementById("overs").innerText = Math.floor(balls / 6) + "." + (balls % 6);
+
+    // Add to highlights
+    currentInningsHighlights.push(`${striker.name} scored ${runs} run(s)`);
+
+    // Handle strike rotation only if both batters are still in
+    if (wickets < players.length - 1) {
+      if (runs % 2 !== 0) {
+        strikeIndex = 1 - strikeIndex; // odd runs = strike change
+      }
+    }
+
+    // End of over
+    if (balls % 6 === 0) {
+      if (wickets < players.length - 1) {
+        strikeIndex = 1 - strikeIndex;
+      }
+      endOver();
+    }
+  }
+
+  function wicketFall() {
+    if (players.length === 0 || wickets >= players.length) {
+      alert("No batters left!");
+      return;
+    }
+
+    let outPlayer = players[strikeIndex];
+    alert(outPlayer.name + " is OUT!");
+    currentInningsHighlights.push(`${outPlayer.name} is OUT!`);
+
+    wickets++;
+    document.getElementById("wickets").innerText = wickets;
+
+    outPlayer.out = true;
+    playerScores[outPlayer.name].out = true;
+    document.getElementById("batter-" + strikeIndex).style.opacity = "0.5";
+
+    // If common player can join
+    if (commonPlayer && wickets === 1 && players.length === 2) {
+      setTimeout(() => {
+        if (!players.some(p => p.name === commonPlayer)) {
+          players.push({name: commonPlayer, img: commonPlayerImg, runs: 0, out: false, ballsFaced: 0, isCommon: true});
+          playerScores[commonPlayer] = {runs: 0, balls: 0, out: false};
+          
+          document.getElementById("batting-pair").innerHTML += `
+            <div id="batter-${players.length-1}" style="text-align:center;">
+              <img src="${commonPlayerImg}" width="60" style="border-radius:50%;"><br>
+              <strong>${commonPlayer} (Common)</strong><br>
+              Runs: <span id="runs-${commonPlayer}">0</span><br>
+              Balls: <span id="balls-${commonPlayer}">0</span>
+            </div>
+          `;
+          
+          alert(`${commonPlayer} (Common player) has joined the batting!`);
+        }
+        strikeIndex = players.findIndex(p => p.name === commonPlayer);
+      }, 500);
+    }
+    
+    // If all out
+    if (wickets >= players.length) {
+      setTimeout(endInnings, 1000);
+      return;
+    }
+
+    // Switch strike to remaining not-out player
+    strikeIndex = players.findIndex(p => !p.out);
+    balls++;
+    document.getElementById("overs").innerText = Math.floor(balls / 6) + "." + (balls % 6);
+
+    if (balls % 6 === 0) {
+      endOver();
+    }
+  }
+
+  function endOver() {
+    overs = Math.floor(balls / 6);
+    showHighlights();
+  }
+
+  function showHighlights() {
+    let list = document.getElementById("highlight-list");
+    list.innerHTML = "";
+    
+    currentInningsHighlights.forEach(highlight => {
+      list.innerHTML += `<li>${highlight}</li>`;
+    });
+    
+    list.innerHTML += "<br><strong>Current Scores:</strong>";
+    for (const [player, stats] of Object.entries(playerScores)) {
+      const outStatus = stats.out ? "(out)" : "(not out)";
+      list.innerHTML += `<li>${player}: ${stats.runs} runs (${stats.balls} balls) ${outStatus}</li>`;
+    }
+    
+    document.getElementById("live-score").style.display = "none";
+    document.getElementById("highlights").style.display = "block";
+  }
+
+  function startNextOver() {
+    currentInningsHighlights = [];
+    document.getElementById("overs").innerText = Math.floor(balls / 6) + "." + (balls % 6);
+    document.getElementById("live-score").style.display = "block";
+    document.getElementById("highlights").style.display = "none";
+  }
+
+  function endInnings() {
+    teamScores.push({team: battingTeams[currentTeamIndex], score: score, wickets: wickets});
+    
+    alert("Innings Over for " + battingTeams[currentTeamIndex] +
+          "! Final Score: " + score + "/" + wickets);
+
+    currentTeamIndex++;
+
+    if (currentTeamIndex < battingTeams.length) {
+      // Reset for next innings
+      players = [];
+      strikeIndex = 0;
+      score = 0; wickets = 0; balls = 0; overs = 0;
+      playerScores = {};
+      allTeamPlayers = [];
+      currentInningsHighlights = [];
+
+      document.getElementById("batting-pair").innerHTML = "";
+      document.getElementById("score").innerText = 0;
+      document.getElementById("wickets").innerText = 0;
+      document.getElementById("overs").innerText = "0.0";
+      document.getElementById("live-score").style.display = "none";
+      document.getElementById("highlights").style.display = "none";
+
+      let selectionDiv = document.getElementById("player-selection");
+      selectionDiv.innerHTML = "<h3>Select Opening Batters for " + battingTeams[currentTeamIndex] + "</h3>";
+      
+      let nextTeamPlayers = battingTeams[currentTeamIndex].split(" & ");
+      nextTeamPlayers.forEach(playerName => {
+        if (availablePlayers[playerName]) {
+          selectionDiv.innerHTML += `
+            <div class="player-option"
+                style="cursor:pointer; border:1px solid #ccc; padding:10px; border-radius:8px; text-align:center; width:100px;"
+                onclick="selectBatter('${playerName}', '${availablePlayers[playerName]}', false)">
+              <img src="${availablePlayers[playerName]}" alt="${playerName}" width="60" height="60" style="border-radius:50%;">
+              <p>${playerName}</p>
+            </div>
+          `;
+        }
+      });
+      
+      if (commonPlayer && availablePlayers[commonPlayer]) {
+        selectionDiv.innerHTML += `
+          <div class="player-option"
+              style="cursor:pointer; border:1px solid #ccc; padding:10px; border-radius:8px; text-align:center; width:100px;"
+              onclick="selectBatter('${commonPlayer}', '${availablePlayers[commonPlayer]}', true)">
+            <img src="${availablePlayers[commonPlayer]}" alt="${commonPlayer}" width="60" height="60" style="border-radius:50%;">
+            <p>${commonPlayer} (Common)</p>
+          </div>
+        `;
+      }
+      
+      selectionDiv.style.display = "flex";
+      alert("Next Innings: " + battingTeams[currentTeamIndex] + " to bat!");
+    } else {
+      // Match over
+      let team1 = battingTeams[0], team2 = battingTeams[1];
+      let score1 = teamScores[0].score, score2 = teamScores[1].score;
+      let wickets1 = teamScores[0].wickets, wickets2 = teamScores[1].wickets;
+      let resultMsg = "";
+
+      // ✅ calculate players per team
+      let team1Players = battingTeams[0].split(" & ").length + (commonPlayer ? 1 : 0);
+      let team2Players = battingTeams[1].split(" & ").length + (commonPlayer ? 1 : 0);
+
+      if (score1 > score2) {
+        resultMsg = `${team1} won by ${score1 - score2} runs!`;
+      } else if (score2 > score1) {
+        resultMsg = `${team2} won by ${team2Players - wickets2} wickets!`;
+      } else {
+        resultMsg = "Match tied!";
+      }
+
+      alert("Match Over!\n" + 
+            team1 + ": " + score1 + "/" + wickets1 + "\n" + 
+            team2 + ": " + score2 + "/" + wickets2 + "\n" + 
+            resultMsg);
+    }
+  }
+</script>
+
+{% endblock %}

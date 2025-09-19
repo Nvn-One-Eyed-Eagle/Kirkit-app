@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Home page {% endblock  %}
+{% block title %} Home page {% endblock %}
 
 {% block content  %}
 
@@ -8,41 +8,77 @@
 <h2>Pre-existing database</h2>
 <div class="player-content">
     {% if profile %}
-    
     {% for i in profile %}
-    
     <div class="player-box">
         {% if i.player_img %}
         <img src="{{ i.player_img.url }}" alt="{{i.player_name}}">
         <h3>{{ i.player_name }}</h3>
         {% else %}
-        <p>no picture availabele </p>
+        <p>No picture available</p>
         {% endif %}
     </div>
-    
     {% endfor %}
+    
     {% else %}
-    <p>no pre-existing database found </p>
+    <p>No pre-existing database found</p>
     {% endif %}
 </div>
 
+<hr>
+
 <h2>Add a new player</h2>
-<!--input to add new user and save to the model -->
-<form method = "POST" enctype = "multipart/form-data">
+<form method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     <label for="name">Player Name : </label>
-    <input type="text" name = "player_name" id = "name">
+    <input type="text" name="player_name" id="name">
     <br><br>
     <label for="img">Player profile : </label>
-    <input type="file" name = "player_img" id = "img" accept="image/*"> <br><br>
-    <button type = 'submit'>Save</button>
+    <input type="file" name="player_img" id="img" accept="image/*"> 
+    <br><br>
+    <button type="submit" name="action" value="save">Save</button>
 </form>
+
 {% if errors %}
-<ul style = "color : red;">
+<ul style="color:red;">
     {% for i in errors %}
-    <li>{{i}}</li>
+    <li>{{ i }}</li>
     {% endfor %}
 </ul>
 {% endif %}
 
-{% endblock  %}
+<hr>
+
+<h2>Form Teams</h2>
+<form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="selected_players" id="selected_players">
+    <button type="submit" name="action" value="teams">Make Teams</button>
+</form>
+
+<script>
+  let players = [];
+  const boxes = document.querySelectorAll(".player-box");
+  const hiddenInput = document.getElementById("selected_players");
+
+  boxes.forEach(box => {
+    box.addEventListener("click", function() {
+      const name = box.querySelector("h3")?.innerText;
+
+      if (name) {
+        if (!players.includes(name)) {
+          players.push(name);
+          box.classList.add("selected");
+        } else {
+          players = players.filter(p => p !== name);
+          box.classList.remove("selected");
+        }
+        console.log(players);
+
+        // update hidden input for Make Teams form
+        hiddenInput.value = JSON.stringify(players);
+      }
+    });
+  });
+</script>
+
+{% endblock %}
